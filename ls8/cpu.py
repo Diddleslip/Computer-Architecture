@@ -88,6 +88,7 @@ class CPU:
     def run(self):
         """Run the CPU."""        
         pc = self.pc
+        SP = 7
         running = True
 
         while running:
@@ -105,7 +106,67 @@ class CPU:
                 self.alu("MUL", self.ram[pc + 1], self.ram[pc + 2])
 
                 pc += 3
+
+            elif inst == 160:  # ADD
+                self.alu("ADD", self.ram[pc + 1], self.ram[pc + 2])
+
+                pc += 3
             
+            elif inst == 69:  # PUSH
+                # decrement stack pointer
+                self.reg[SP] -= 1
+
+                self.reg[SP] &= 0xff  # keep R7 in the range 00-FF
+
+                # get self.reg value
+                reg_num = self.ram[pc + 1]
+                value = self.reg[reg_num]
+
+                # Store in self.ram
+                address_to_push_to = self.reg[SP]
+                self.ram[address_to_push_to] = value
+                print("In pushing ", value)
+                pc += 2
+
+            elif inst == 70:  # POP
+                # Get value from RAM
+                address_to_pop_from = self.reg[SP]
+                value = self.ram[address_to_pop_from]
+
+                # Store in the given self.reg
+                reg_num = self.ram[pc + 1]
+                self.reg[reg_num] = value
+
+                # Increment SP
+                self.reg[SP] += 1
+                print("In POPPING ", value)
+
+                pc += 2
+
+            elif inst == 80:
+                # Get address of the next instruction
+                return_addr = pc + 2
+
+                # Push that on the stack
+                self.reg[SP] -= 1
+                address_to_push_to = self.reg[SP]
+                self.ram[address_to_push_to] = return_addr
+
+                # Set the PC to the subroutine address
+                reg_num = self.ram[pc + 1]
+                subroutine_addr = self.reg[reg_num]
+
+                pc = subroutine_addr
+
+            elif inst == 17:
+                # Get return address from the top of the stack
+                address_to_pop_from = self.reg[SP]
+                return_addr = self.ram[address_to_pop_from]
+                self.reg[SP] += 1
+
+                # Set the PC to the return address
+                pc = return_addr
+
             elif inst == 71:  # PRN
                 reg = self.ram[pc + 1]
                 print("Print method in CPU: ",self.reg[reg])
